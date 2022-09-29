@@ -1,0 +1,12 @@
+# Docs: https://github.com/PokerFacowaty/naps
+api_version: 1.16.1
+user:
+encoded_password:
+salt:
+link:
+musicfolder_name: /music
+local_musicfolder:
+playlist_dir:
+device_id:
+custom_filenames:
+  #Playlist name: My_custom_filename.m3u
