@@ -37,17 +37,35 @@ def test_connection(link, parameters):
                         ['message'])
 
 
-def fetch_srv_playlists(link, parameters, srv_system,
-                        musicfolder, nd_musicfolder):
-    '''Fetches all playlists available on the server and stores them as
-    objects, then appends the song_paths with a full local path of the song.'''
+def fetch_included_playlists(include_file):
+    with open(include_file, 'r', encoding='utf-8') as f:
+        included = [x.rstrip() for x in f.read().splitlines()]
+    return included
+
+
+def fetch_excluded_playlists(exclude_file):
+    with open(exclude_file, 'r', encoding='utf-8') as f:
+        excluded = [x.rstrip() for x in f.read().splitlines()]
+    return excluded
+
+
+def fetch_srv_playlists(link, parameters, srv_system, musicfolder,
+                        nd_musicfolder, included, excluded):
+    '''Fetches all playlists available on the server and, if they are included
+    or not excluded, stores them as objects, then appends the song_paths with
+    a full local path of the song.'''
 
     getPlaylists = requests.get(link + "getPlaylists", params=parameters)
     srv_playlists = []
     print("Fetching server playlists...")
     for pl in (getPlaylists.json()['subsonic-response']['playlists']
                ['playlist']):
-        srv_playlists.append(SrvPlaylist(pl['id'], pl['name']))
+        if included is not None and pl['name'] in included:
+            srv_playlists.append(SrvPlaylist(pl['id'], pl['name']))
+        elif excluded is not None and pl['name'] not in excluded:
+            srv_playlists.append(SrvPlaylist(pl['id'], pl['name']))
+        elif included is None and excluded is None:
+            srv_playlists.append(SrvPlaylist(pl['id'], pl['name']))
 
     for pl in srv_playlists:
         parameters['id'] = pl.playlist_id
@@ -119,7 +137,11 @@ def update_local(to_update):
 def main():
     initial = False
     config_file = 'config.yaml'
-    opts, args = getopt.getopt(sys.argv[1:], "hic:", ["help", "config="])
+    include_file = None
+    exclude_file = None
+    opts, args = getopt.getopt(sys.argv[1:], "hic:", ["help", "config=",
+                                                      "include-from=",
+                                                      "exclude-from="])
 
     for opt, arg in opts:
         if opt in ['-h', '--help']:
@@ -127,6 +149,10 @@ def main():
                   "\nUsage: naps.py (-i for initial connection)",
                   "\n[-h, --help] - open this prompt",
                   "\n[-i] - initial connection",
+                  "\n[--include-from] - provide a text file with names of all",
+                  "playlists that should be included",
+                  "\n[--exclude-from] - provide a text file with names of all",
+                  "playlists that should be excluded",
                   "\nDocs: https://github.com/PokerFacowaty/naps\n")
             return
         elif opt in ['-i']:
@@ -134,6 +160,10 @@ def main():
         elif opt in ['-c', '--config']:
             config_file = arg
             print(f"Custom config file {arg} loaded.")
+        elif opt in ['--include-from']:
+            include_file = arg
+        elif opt in ['--exclude-from']:
+            exclude_file = arg
 
     config = yaml.safe_load(open(config_file))
 
@@ -167,9 +197,24 @@ def main():
         print("Initial connection successful.")
         return
 
+    if include_file is not None and exclude_file is not None:
+        print("Do not use --include-from and --exclude-from simultaneously")
+        return
+
+    if include_file is not None:
+        included = fetch_included_playlists(include_file)
+    else:
+        included = None
+
+    if exclude_file is not None:
+        excluded = fetch_excluded_playlists(exclude_file)
+    else:
+        excluded = None
+
     test_connection(link, parameters)
     srv_playlists = fetch_srv_playlists(link, parameters, srv_system,
-                                        musicfolder, nd_musicfolder)
+                                        musicfolder, nd_musicfolder, included,
+                                        excluded)
     local_playlists = fetch_local_playlists(pl_path)
     to_make, to_update = pl_to_make_and_update(srv_playlists, local_playlists)
     if to_make:

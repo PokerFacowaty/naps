@@ -90,9 +90,11 @@ python3 naps.py
 ```
 
 ## Arguments
+- `-h, --help` - show help
 - `-i` - initial connection
 - `-c, --config <file>` - use a custom config file
-- `-h, --help` - show help
+- `--include-from <file>` - provide a text file with names of all the playlists that should be included in the sync (rclone-style)
+- `--exclude-from <file>` - provide a text file with names of all the playlists that should be excluded in the sync (rclone-style)
 
 If you wish to perform syncing periodically, use a program such as cron.
 
