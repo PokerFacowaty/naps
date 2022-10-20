@@ -12,7 +12,7 @@ class SrvPlaylist:
         self.playlist_id = playlist_id
         self.name = name
         filename = name + '.m3u8'
-        if name in custom_filenames.keys():
+        if custom_filenames is not None and name in custom_filenames.keys():
             self.file = pl_path / custom_filenames[name]
         else:
             self.file = pl_path / filename
