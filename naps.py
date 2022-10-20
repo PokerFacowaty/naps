@@ -70,6 +70,9 @@ def fetch_srv_playlists(link, parameters, srv_system, musicfolder,
     for pl in srv_playlists:
         parameters['id'] = pl.playlist_id
         getPlaylist = requests.get(link + "getPlaylist", params=parameters)
+        if (getPlaylist.json()['subsonic-response']['playlist']
+                ['songCount'] == 0):
+            continue
         for song in (getPlaylist.json()['subsonic-response']['playlist']
                      ['entry']):
             if srv_system == 'posix':
